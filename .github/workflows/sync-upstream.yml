@@ -1,0 +1,47 @@
+name: Sync Fork with Upstream
+
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout fork
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Sync with upstream, protecting web/
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          if [ -d web ]; then
+            rm -rf /tmp/web-backup
+            cp -r web /tmp/web-backup
+          fi
+
+          git remote add upstream https://github.com/luau-lang/playground.git || true
+          git fetch upstream
+
+          git merge upstream/main --no-edit -X theirs || {
+            git add -A
+            git commit -m "Auto-sync com upstream (conflitos resolvidos a favor do upstream)" || true
+          }
+
+          if [ -d /tmp/web-backup ]; then
+            rm -rf web
+            cp -r /tmp/web-backup web
+            git add web
+            if ! git diff --cached --quiet; then
+              git commit -m "Preserva pasta web/ após sync com upstream"
+            fi
+          fi
+
+          git push origin main
