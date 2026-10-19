@@ -17,7 +17,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Sync with upstream, protecting web/
+      - name: Sync with upstream, protecting web/ and deploy.yml
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -27,21 +27,32 @@ jobs:
             cp -r web /tmp/web-backup
           fi
 
+          if [ -f .github/workflows/deploy.yml ]; then
+            rm -rf /tmp/deploy-backup
+            mkdir -p /tmp/deploy-backup
+            cp .github/workflows/deploy.yml /tmp/deploy-backup/
+          fi
+
           git remote add upstream https://github.com/luau-lang/playground.git || true
           git fetch upstream
-
           git merge upstream/main --no-edit -X theirs || {
             git add -A
-            git commit -m "Auto-sync com upstream (conflitos resolvidos a favor do upstream)" || true
+            git commit -m "Auto-sync com upstream" || true
           }
 
           if [ -d /tmp/web-backup ]; then
             rm -rf web
             cp -r /tmp/web-backup web
             git add web
-            if ! git diff --cached --quiet; then
-              git commit -m "Preserva pasta web/ após sync com upstream"
-            fi
+          fi
+
+          if [ -f /tmp/deploy-backup/deploy.yml ]; then
+            cp /tmp/deploy-backup/deploy.yml .github/workflows/deploy.yml
+            git add .github/workflows/deploy.yml
+          fi
+
+          if ! git diff --cached --quiet; then
+            git commit -m "Preserva web/ e deploy.yml customizados após sync"
           fi
 
           git push origin main
