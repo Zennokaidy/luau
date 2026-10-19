@@ -25,6 +25,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Patch Luau Frontend SolverMode
+        run: |
+          sed -i 's/std::make_unique<Luau::Frontend>(/std::make_unique<Luau::Frontend>(Luau::SolverMode::New, /' wasm/src/playground.cpp
+
       - name: Build
         uses: ./.github/actions/build
 
