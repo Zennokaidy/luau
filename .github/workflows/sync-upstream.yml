@@ -22,13 +22,11 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # 1. Backup da pasta web/
           if [ -d web ]; then
             rm -rf /tmp/web-backup
             cp -r web /tmp/web-backup
           fi
 
-          # 2. Sincroniza com o upstream (priorizando o upstream)
           git remote add upstream https://github.com/luau-lang/playground.git || true
           git fetch upstream
           git merge upstream/main --no-edit -X theirs || {
@@ -36,21 +34,17 @@ jobs:
             git commit -m "Auto-sync com upstream" || true
           }
 
-          # 3. Restaura a pasta web/ intocada
           if [ -d /tmp/web-backup ]; then
             rm -rf web
             cp -r /tmp/web-backup web
             git add web
           fi
 
-          # 4. Remove o job 'notify' (Slack) do deploy.yml que acabou de vir do upstream
-          # O comando abaixo apaga do 'notify:' até o final do arquivo
           if [ -f .github/workflows/deploy.yml ]; then
             sed -i '/^  notify:/,$d' .github/workflows/deploy.yml
             git add .github/workflows/deploy.yml
           fi
 
-          # 5. Salva tudo
           if ! git diff --cached --quiet; then
             git commit -m "Preserva web/ e remove Slack notify após sync"
           fi
