@@ -1,8 +1,6 @@
 name: Sync Fork with Upstream
 
 on:
-  schedule:
-    - cron: '0 6 * * *'
   workflow_dispatch:
 
 permissions:
@@ -22,6 +20,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
+          # Backup das suas customizações
           if [ -d web ]; then
             rm -rf /tmp/web-backup
             cp -r web /tmp/web-backup
@@ -40,6 +39,12 @@ jobs:
             git commit -m "Auto-sync com upstream" || true
           }
 
+          if [ -f wasm/src/playground.cpp ]; then
+            sed -i 's/std::make_unique<Luau::Frontend>(Luau::SolverMode::New, Luau::SolverMode::Old,/std::make_unique<Luau::Frontend>(Luau::SolverMode::New,/g' wasm/src/playground.cpp
+            sed -i 's/std::make_unique<Luau::Frontend>(Luau::SolverMode::New, Luau::SolverMode::New,/std::make_unique<Luau::Frontend>(Luau::SolverMode::New,/g' wasm/src/playground.cpp
+            git add wasm/src/playground.cpp
+          fi
+
           if [ -d /tmp/web-backup ]; then
             rm -rf web
             cp -r /tmp/web-backup web
@@ -52,7 +57,7 @@ jobs:
           fi
 
           if ! git diff --cached --quiet; then
-            git commit -m "Preserva web/ e deploy.yml customizados após sync"
+            git commit -m "Sync com upstream e auto-fix de C++ (protege web/deploy)"
           fi
 
           git push origin main
